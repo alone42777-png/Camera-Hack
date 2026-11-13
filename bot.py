@@ -14,7 +14,7 @@ if not BOT_TOKEN:
     print("[!] ERROR: BOT_TOKEN is not set in the environment variables!")
     sys.exit(1)
 
-bot = telebot.TeleBot(BOT_TOKEN)
+bot = telebot.TeleBot(BOT_TOKEN, threaded=True)
 
 # پاککردنەوەی لیستەکە لە سپەیس
 ADMIN_IDS = [int(admin_id.strip()) for admin_id in ADMIN_IDS if admin_id.strip().isdigit()]
@@ -279,11 +279,12 @@ def clean_command(message):
 
 if __name__ == '__main__':
     print("==========================================")
-    print("💀 TITANIUM OMEGA: IDYLLIC LINK BOT 💀")
+    print("💀 TITANIUM OMEGA: STABLE RUNNER ACTIVE 💀")
     print("==========================================")
-    while True:
-        try:
-            bot.infinity_polling(timeout=60, long_polling_timeout=60)
-        except Exception as e:
-            print(f"[!] Connection Error Handled: {e}")
-            time.sleep(3)
+    # لابردنی ویبەوکی کۆن پێش دەستپێکردن بۆ دڵنیایی
+    try:
+        bot.remove_webhook()
+    except:
+        pass
+        
+    bot.infinity_polling(skip_pending=True)
