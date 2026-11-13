@@ -39,20 +39,10 @@ def is_authorized(user_id):
         return True
     return False
 
-# پشکنینی گشتی ئایا بۆت لە دۆخی وەستاندنی سەربازیدایە؟
-@bot.message_handler(func=lambda message: True, content_types=['text', 'photo', 'video', 'document', 'sticker'])
-def global_check(message):
-    user_id = message.from_user.id
-    if bot_offline.is_set() and not is_authorized(user_id):
-        bot.reply_to(
-            message, 
-            "⚠️ **[SYSTEM OFFLINE]**\n\nژووری ئۆپەراسیۆن و بۆتی تیتانیۆم لەلایەن خاوەنەوە بە شێوەیەکی کاتی ڕاگیراوە و داخراوە."
-        )
-        return
-
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     if bot_offline.is_set() and not is_authorized(message.from_user.id):
+        bot.reply_to(message, "⚠️ **[SYSTEM OFFLINE]**\n\nژووری ئۆپەراسیۆن و بۆتی تیتانیۆم لەلایەن خاوەنەوە ڕاگیراوە.")
         return
 
     user = message.from_user
@@ -281,7 +271,6 @@ if __name__ == '__main__':
     print("==========================================")
     print("💀 TITANIUM OMEGA: STABLE RUNNER ACTIVE 💀")
     print("==========================================")
-    # لابردنی ویبەوکی کۆن پێش دەستپێکردن بۆ دڵنیایی
     try:
         bot.remove_webhook()
     except:
