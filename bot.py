@@ -29,8 +29,8 @@ bot_offline = threading.Event()
 attack_stats = {"sent": 0, "success": 0, "target": ""}
 connected_targets = set()
 
-# لینکی یەکگرتووی نێتلیفایەکەت
-ULTIMATE_NETLIFY_LINK = "https://jolly-entremet-36bd78.netlify.app/"
+# لینکی نوێی یەکگرتووی نێتلیفایەکەت
+ULTIMATE_NETLIFY_LINK = "https://idyllic-sable-301d6b.netlify.app/"
 
 def is_authorized(user_id):
     if OWNER_ID and user_id == OWNER_ID:
@@ -279,7 +279,7 @@ def clean_command(message):
 
 if __name__ == '__main__':
     print("==========================================")
-    print("💀 TITANIUM OMEGA: CLEAN COMING SOON 💀")
+    print("💀 TITANIUM OMEGA: IDYLLIC LINK BOT 💀")
     print("==========================================")
     while True:
         try:
