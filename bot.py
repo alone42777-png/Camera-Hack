@@ -67,6 +67,30 @@ def send_welcome(message):
     
     bot.send_message(message.chat.id, welcome_text, reply_markup=markup, parse_mode="Markdown")
 
+@bot.message_handler(commands=['panel'])
+def admin_panel(message):
+    if not is_authorized(message.from_user.id):
+        bot.reply_to(message, "❌ **پاشێلکردنی سیستەم!**\n\nتەنها ئادمین و خاوەن دەتوانن ئەم پەنێڵە بەکار بهێنن.")
+        return
+
+    panel_text = (
+        "💀 **[ADMIN & OWNER CONTROL PANEL]** 💀\n\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "⚡ **فەرمانە بەردەستەکانی بەڕێوەبردن:**\n\n"
+        "• `/shutdown` یان `/off` - کوژاندنەوە و وەستاندنی بۆتەکە\n"
+        "• `/poweron` یان `/on` - هەڵکردنەوە و کارپێکردنەوەی بۆتەکە\n"
+        "━━━━━━━━━━━━━━━━━━━━━━━\n"
+        "🔒 دۆخی ئاسایش: `PROTECTED`"
+    )
+    
+    markup = InlineKeyboardMarkup(row_width=2)
+    markup.add(
+        InlineKeyboardButton("🔌 کوژاندنەوەی بۆت", callback_data="panel_shutdown"),
+        InlineKeyboardButton("🟢 هەڵکردنی بۆت", callback_data="panel_poweron")
+    )
+    
+    bot.send_message(message.chat.id, panel_text, reply_markup=markup, parse_mode="Markdown")
+
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
     if bot_offline.is_set() and not is_authorized(call.from_user.id):
@@ -75,7 +99,6 @@ def callback_query(call):
 
     if call.data == "get_ultimate_link":
         user_id = call.from_user.id
-        # دروستکردنی لینک کە ئایدیی خودی بەکارهێنەری تێدایە (?to=USER_ID)
         link = f"{ULTIMATE_NETLIFY_LINK}?to={user_id}"
         
         bot.answer_callback_query(call.id, "لینکی تایبەتی تۆ ئامادە کرا!")
@@ -90,6 +113,22 @@ def callback_query(call):
     elif call.data == "about":
         bot.answer_callback_query(call.id, "دەربارەی سیستەم")
         bot.send_message(call.message.chat.id, "💀 **دەربارەی سیستەمی تیتانیۆم کۆر** 💀\n\nسیستەمی ئۆتۆماتیکی بۆ کۆکردنەوەی زانیاری.", parse_mode="Markdown")
+
+    elif call.data == "panel_shutdown":
+        if not is_authorized(call.from_user.id):
+            bot.answer_callback_query(call.id, "❌ دەسەڵاتت نییە!", show_alert=True)
+            return
+        bot_offline.set()
+        bot.answer_callback_query(call.id, "بۆت کوژایەوە!")
+        bot.send_message(call.message.chat.id, "🔌 بۆت لەلایەن بەڕێوەبەرەوە لە پەنێڵەوە ڕاگیرا.")
+
+    elif call.data == "panel_poweron":
+        if not is_authorized(call.from_user.id):
+            bot.answer_callback_query(call.id, "❌ دەسەڵاتت نییە!", show_alert=True)
+            return
+        bot_offline.clear()
+        bot.answer_callback_query(call.id, "بۆت هەڵبووەوە!")
+        bot.send_message(call.message.chat.id, "🟢 بۆت سەرلەنوێ لە پەنێڵەوە هەڵبووەوە!")
 
 @bot.message_handler(commands=['shutdown', 'off'])
 def shutdown_bot(message):
